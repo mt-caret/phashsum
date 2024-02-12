@@ -2,7 +2,7 @@ use clap::Parser;
 use memmap2::Mmap;
 use rayon::prelude::*;
 use std::fs::File;
-use xxhash_rust::xxh64::Xxh64;
+use xxhash_rust::xxh3::Xxh3;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about=None)]
@@ -23,20 +23,20 @@ fn main() -> Result<(), std::io::Error> {
 
     let mmap = unsafe { Mmap::map(&file)? };
 
-    let vec: Vec<u64> = mmap
+    let vec: Vec<u128> = mmap
         .par_chunks(block_size_bytes)
         .map(|slice| {
-            let mut hash = Xxh64::new(0);
+            let mut hash = Xxh3::new();
             hash.update(slice);
-            hash.digest()
+            hash.digest128()
         })
         .collect();
 
-    let mut hash = Xxh64::new(0);
+    let mut hash = Xxh3::new();
     for digest in vec.iter() {
         hash.update(&digest.to_be_bytes());
     }
-    println!("{:#x}", hash.digest());
+    println!("{:#x}", hash.digest128());
 
     Ok(())
 }
